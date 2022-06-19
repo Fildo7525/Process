@@ -97,6 +97,7 @@ public:
 	~process();
 
 private:
+	// TODO: m_pipe will be some interface like IPCMemoryDelegator
 	/// Pipe for sharing data by IPC
 	Pipe m_pipe;
 
@@ -104,6 +105,7 @@ private:
 	pid_t m_childPid;
 };
 
+// TODO: send will be overriden function
 template<typename T> void
 process::share_data(T data)
 {
@@ -136,6 +138,7 @@ void process::run(T&& child_proc_fun, Child_arg&&... child_param)
 	// exit(0);
 }
 
+// TODO: m_pipe should be done by some interface => read will be overriden function
 template <typename _ret> _ret
 process::readChildMemory()
 {
