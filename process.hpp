@@ -14,7 +14,9 @@
 #include "ipc/pipe.hpp"
 
 #include <functional>
+#include <memory>
 #include <cstring>
+
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -99,7 +101,7 @@ public:
 private:
 	// TODO: m_pipe will be some interface like IPCMemoryDelegator
 	/// Pipe for sharing data by IPC
-	Pipe m_pipe;
+	std::shared_ptr<MemoryDelegator> m_memoryDelegator;
 
 	/// Child process ID
 	pid_t m_childPid;
@@ -109,17 +111,17 @@ private:
 template<typename T> void
 process::share_data(T data)
 {
-	m_pipe.send(data);
+	m_memoryDelegator->send(reinterpret_cast<const void*>(&data));
 }
 
 inline process::process()
-: m_pipe()
+: m_memoryDelegator()
 {
 }
 
 template <typename T, typename... Child_arg>
 process::process(T&& child_proc_fun, Child_arg&&... child_param)
-: m_pipe()
+: m_memoryDelegator(new Pipe())
 {
 	run(child_proc_fun, child_param...);
 }
@@ -130,11 +132,11 @@ void process::run(T&& child_proc_fun, Child_arg&&... child_param)
 	if((m_childPid = fork()) < 0)
 		throw std::runtime_error("Fork terminated with error");
 	else if( m_childPid == 0) {	// indication of child process
-		m_pipe.closeSide(PipeSides::parent);
+		m_memoryDelegator->init(reinterpret_cast<void *>(PipeSides::parent));
 		share_data(std::invoke(std::forward<T>(child_proc_fun), std::forward<Child_arg>(child_param)...));
 		exit(0);	// exit state of 0
 	}
-	m_pipe.closeSide(PipeSides::child);
+	m_memoryDelegator->deinit(reinterpret_cast<void *>(PipeSides::child));
 	// exit(0);
 }
 
@@ -142,7 +144,7 @@ void process::run(T&& child_proc_fun, Child_arg&&... child_param)
 template <typename _ret> _ret
 process::readChildMemory()
 {
-	return m_pipe.read<_ret>();
+	return reinterpret_cast<_ret*>(m_memoryDelegator->read());
 }
 
 inline void process::changeProcess(const std::string& path, const std::string& cmd)
@@ -157,6 +159,5 @@ inline pid_t process::getChildPid()
 
 inline process::~process()
 {
-	m_pipe.~Pipe();
 }
 
