@@ -20,13 +20,13 @@ testData testFunction(int i, short s, long l, char c, const char *cstr, std::str
 
 int main(int argc, char *argv[])
 {
-	process p;
+	process<testData> p;
 	std::cout << "Hello World!\n";
 	p.run(testFunction, 10, 3, 50, 'f', "cstr", std::string("str"));
 
 	sleep(2);
 
-	auto returnedData = p.readChildMemory<testData>();
+	auto returnedData = p.readChildMemory();
 	printf("Returned data are:\n\t%d\n\t%d\n\t%ld\n\t%c\n\t%s\n\t%s\n",
 		returnedData.i,
 		returnedData.s,

@@ -36,6 +36,7 @@
  * 	  - int - child process exit state
  * 	- process::change_process() runs execl with third argument NULL
  */
+template<typename T>
 class process
 {
 	/**
@@ -44,12 +45,11 @@ class process
 	 * @tparam sharedData_t Type of shared data.
 	 * @param data Data to be send to other process.
 	 */
-	template<typename sharedData_t> void
-	share_data(sharedData_t data);
+	void share_data(const T data);
 
 public:
 	/// Constructor
-	explicit process();
+	explicit process(std::shared_ptr<MemoryDelegator<T>> memoryDelegator = std::make_shared<Pipe<T>>());
 
 	/**
 	 * @brief Constructor that immediatelly runs the inputed callable in other process with supplied parameters.
@@ -60,7 +60,9 @@ public:
 	 * @param functionParameters Arguments to be passed to child_proc_fun.
 	 */
 	template <typename Callable, typename... Child_args>
-	process(Callable&& childProccessFunction, Child_args&&... functionParameters);
+	process(Callable&& childProccessFunction,
+		 	Child_args&&... functionParameters,
+			std::shared_ptr<MemoryDelegator<T>> memoryDelegator = std::make_shared<Pipe<T>>());
 
 	/**
 	 * @brief Function supplying the callable to child process.
@@ -79,8 +81,7 @@ public:
 	 * @tparam _ret Return type of the desired output.
 	 * @return Shared data, result of IPC.
 	 */
-	template <typename _ret> _ret
-	readChildMemory();
+	T readChildMemory();
 
 	/**
 	 * @brief Change the process execution to specific executable.
@@ -100,40 +101,41 @@ public:
 
 private:
 	// TODO: m_pipe will be some interface like IPCMemoryDelegator
-	/// Pipe for sharing data by IPC
-	std::shared_ptr<MemoryDelegator> m_memoryDelegator;
-
+	std::shared_ptr<MemoryDelegator<T>> m_memoryDelegator;
 	/// Child process ID
 	pid_t m_childPid;
 };
 
 // TODO: send will be overriden function
-template<typename T> void
-process::share_data(T data)
+template<typename T>
+void process<T>::share_data(const T data)
 {
-	m_memoryDelegator->send(reinterpret_cast<const void*>(&data));
+	m_memoryDelegator->send(&data);
 }
 
-inline process::process()
-: m_memoryDelegator()
+template<typename T>
+inline process<T>::process(std::shared_ptr<MemoryDelegator<T>> memoryDelegator)
+: m_memoryDelegator(memoryDelegator)
 {
 }
 
-template <typename T, typename... Child_arg>
-process::process(T&& child_proc_fun, Child_arg&&... child_param)
-: m_memoryDelegator(new Pipe())
+template<typename T>
+template <typename Callable, typename... Child_args>
+process<T>::process(Callable&& childProcessFunction, Child_args&&... functionParameters, std::shared_ptr<MemoryDelegator<T>> memoryDelegator)
+: m_memoryDelegator(memoryDelegator)
 {
-	run(child_proc_fun, child_param...);
+	run(childProcessFunction, functionParameters...);
 }
 
-template <typename T, typename... Child_arg>
-void process::run(T&& child_proc_fun, Child_arg&&... child_param)
+template<typename T>
+template <typename Callable, typename... Child_args>
+void process<T>::run(Callable&& childProcessFunction, Child_args&&... functionParameters)
 {
 	if((m_childPid = fork()) < 0)
 		throw std::runtime_error("Fork terminated with error");
 	else if( m_childPid == 0) {	// indication of child process
 		m_memoryDelegator->init(reinterpret_cast<void *>(PipeSides::parent));
-		share_data(std::invoke(std::forward<T>(child_proc_fun), std::forward<Child_arg>(child_param)...));
+		share_data(std::invoke(std::forward<Callable>(childProcessFunction), std::forward<Child_args>(functionParameters)...));
 		exit(0);	// exit state of 0
 	}
 	m_memoryDelegator->deinit(reinterpret_cast<void *>(PipeSides::child));
@@ -141,23 +143,26 @@ void process::run(T&& child_proc_fun, Child_arg&&... child_param)
 }
 
 // TODO: m_pipe should be done by some interface => read will be overriden function
-template <typename _ret> _ret
-process::readChildMemory()
+template<typename T>
+T process<T>::readChildMemory()
 {
-	return reinterpret_cast<_ret*>(m_memoryDelegator->read());
+	return static_cast<T>(m_memoryDelegator->read());
 }
 
-inline void process::changeProcess(const std::string& path, const std::string& cmd)
+template<typename T>
+inline void process<T>::changeProcess(const std::string& path, const std::string& cmd)
 {
 	this->run(execl, path.c_str(),cmd.c_str(),NULL);
 }
 
-inline pid_t process::getChildPid()
+template<typename T>
+inline pid_t process<T>::getChildPid()
 {
 	return m_childPid;
 }
 
-inline process::~process()
+template<typename T>
+inline process<T>::~process()
 {
 }
 
