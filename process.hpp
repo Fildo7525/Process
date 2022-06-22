@@ -110,13 +110,11 @@ public:
 	~process();
 
 private:
-	// TODO: m_pipe will be some interface like IPCMemoryDelegator
 	std::shared_ptr<MemoryDelegator<T>> m_memoryDelegator;
 	/// Child process ID
 	pid_t m_childPid;
 };
 
-// TODO: send will be overriden function
 template<typename T>
 void process<T>::share_data(const T data)
 {
