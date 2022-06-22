@@ -11,6 +11,8 @@ set(SOURCES
 set(HEADERS
 	process.hpp
 	ipc/pipe.hpp
+	ipc/MemoryDelegator.hpp
+	debug.hpp
 )
 
 add_executable(${PROJECT_NAME}

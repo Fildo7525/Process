@@ -1,5 +1,9 @@
 #include "process.hpp"
+
+#include "debug.hpp"
+
 #include <iostream>
+#include <string>
 #include <unistd.h>
 
 struct testData
@@ -21,8 +25,14 @@ testData testFunction(int i, short s, long l, char c, const char *cstr, std::str
 int main(int argc, char *argv[])
 {
 	process<testData> p;
-	std::cout << "Hello World!\n";
+	ILOG("Process created");
+	DLOG("Preparing to run process with parameters 10, 3, 50, \'f\', \"cstr\", std::string(\"str\")");
+
 	p.run(testFunction, 10, 3, 50, 'f', "cstr", std::string("str"));
+
+	std::string msg = "Process running going to sleep in process";
+	msg += std::to_string(p.pid());
+	ILOG(msg.c_str());
 
 	sleep(2);
 

@@ -13,6 +13,8 @@
 
 #include "ipc/pipe.hpp"
 
+#include "debug.hpp"
+
 #include <functional>
 #include <memory>
 #include <cstring>
@@ -131,15 +133,23 @@ template<typename T>
 template <typename Callable, typename... Child_args>
 void process<T>::run(Callable&& childProcessFunction, Child_args&&... functionParameters)
 {
-	if((m_childPid = fork()) < 0)
+	if((m_childPid = fork()) < 0) {
+		ELOG("Error while calling fork, quitting the program");
 		throw std::runtime_error("Fork terminated with error");
+	}
 	else if( m_childPid == 0) {	// indication of child process
+		std::string msg = "Starting execution of child process number ";
+		msg += std::to_string(pid());
+		ILOG(msg.c_str());
 		m_memoryDelegator->init(reinterpret_cast<void *>(PipeSides::parent));
 		share_data(std::invoke(std::forward<Callable>(childProcessFunction), std::forward<Child_args>(functionParameters)...));
 		exit(0);	// exit state of 0
 	}
 	m_memoryDelegator->deinit(reinterpret_cast<void *>(PipeSides::child));
-	// exit(0);
+
+	std::string msg = "Parent process continues. Process number ";
+	msg += std::to_string(pid());
+	ILOG(msg.c_str());
 }
 
 // TODO: m_pipe should be done by some interface => read will be overriden function

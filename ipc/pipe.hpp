@@ -1,5 +1,7 @@
 #include "MemoryDelegator.hpp"
 
+#include "../debug.hpp"
+
 #include <cstdint>
 #include <cstdio>
 #include <unistd.h>
@@ -65,13 +67,18 @@ template <typename T>
 inline Pipe<T>::Pipe()
 : m_opened(PipeSides::none)
 {
-	pipe(m_fd);
+	if (pipe(m_fd) < 0) {
+		ELOG("Pipe creation failed");
+	}
+
 }
 
 template <typename T>
 inline void Pipe<T>::closeSide(PipeSides endpoint)
 {
+	ILOG("Closing one side of the pipe");
 	close(static_cast<int>(m_opened));
+	ILOG(static_cast<int>(m_opened) + '0')
 	m_opened = (endpoint == PipeSides::child ? PipeSides::parent : PipeSides::child);
 }
 
