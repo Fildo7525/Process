@@ -3,6 +3,7 @@
 //
 #pragma once
 
+#include <unistd.h>
 #ifndef __gnu_linux__
 #error "The software is defined for unix/linux type systems"
 #endif
@@ -96,7 +97,14 @@ public:
 	/**
 	 * @brief Child process ID.
 	 */
-	pid_t getChildPid();
+	pid_t childPid();
+
+	/**
+	 * @brief Process ID.
+	 *
+	 * @return Returns current process id.
+	 */
+	pid_t pid();
 
 	/// Desturctor
 	~process();
@@ -152,7 +160,6 @@ void process<T>::run(Callable&& childProcessFunction, Child_args&&... functionPa
 	ILOG(msg.c_str());
 }
 
-// TODO: m_pipe should be done by some interface => read will be overriden function
 template<typename T>
 T process<T>::readChildMemory()
 {
@@ -162,13 +169,19 @@ T process<T>::readChildMemory()
 template<typename T>
 inline void process<T>::changeProcess(const std::string& path, const std::string& cmd)
 {
-	this->run(execl, path.c_str(),cmd.c_str(),NULL);
+	this->run(execl, path.c_str(), cmd.c_str(), NULL);
 }
 
 template<typename T>
-inline pid_t process<T>::getChildPid()
+inline pid_t process<T>::childPid()
 {
 	return m_childPid;
+}
+
+template<typename T>
+inline pid_t process<T>::pid()
+{
+	return getpid();
 }
 
 template<typename T>
