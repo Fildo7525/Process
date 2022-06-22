@@ -147,11 +147,11 @@ void process<T>::run(Callable&& childProcessFunction, Child_args&&... functionPa
 		std::string msg = "Starting execution of child process number ";
 		msg += std::to_string(pid());
 		ILOG(msg.c_str());
-		m_memoryDelegator->init(reinterpret_cast<void *>(PipeSides::parent));
+		m_memoryDelegator->init();
 		share_data(std::invoke(std::forward<Callable>(childProcessFunction), std::forward<Child_args>(functionParameters)...));
 		exit(0);	// exit state of 0
 	}
-	m_memoryDelegator->deinit(reinterpret_cast<void *>(PipeSides::child));
+	m_memoryDelegator->deinit();
 
 	std::string msg = "Parent process continues. Process number ";
 	msg += std::to_string(pid());

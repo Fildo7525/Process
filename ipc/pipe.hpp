@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <sstream>
 #include <unistd.h>
 
 enum class PipeSides
@@ -34,7 +35,7 @@ public:
 	 */
 	void closeSide(PipeSides endpoint);
 
-	void init(void *args) override;
+	void init() override;
 
 	/**
 	 * @brief Function for sharing data between processes.
@@ -52,7 +53,7 @@ public:
 	 */
 	T read() override;
 
-	void deinit(void *args) override;
+	void deinit() override;
 	/**
 	 * @brief Destrucotr closes the opened side of the pipe.
 	 */
@@ -70,7 +71,6 @@ inline Pipe<T>::Pipe()
 	if (pipe(m_fd) < 0) {
 		ELOG("Pipe creation failed");
 	}
-
 }
 
 template <typename T>
@@ -82,17 +82,18 @@ inline void Pipe<T>::closeSide(PipeSides endpoint)
 	m_opened = (endpoint == PipeSides::child ? PipeSides::parent : PipeSides::child);
 }
 
+// TODO: Implementation of the init and deinit funcitons -> some input method
 template <typename T>
-inline void Pipe<T>::init(void *args)
+inline void Pipe<T>::init()
 {
-	PipeSides side = *reinterpret_cast<PipeSides*>(args);
-	closeSide(side);
+	ILOG("");
+	ILOG("PipeSide created");
+	closeSide(PipeSides::child);
 }
 
 template <typename T>
 void Pipe<T>::send(const T *toSend)
 {
-	//std::cout << "Sneding:\n\ta: " << toSend.a << "\n\tb: " << toSend.b << std::endl;
 	write(m_fd[static_cast<int>(m_opened)], reinterpret_cast<const T*>(&toSend), sizeof(toSend));
 }
 
@@ -106,7 +107,7 @@ T Pipe<T>::read()
 }
 
 template <typename T>
-inline void Pipe<T>::deinit(void *args)
+inline void Pipe<T>::deinit()
 {
 	closeSide(m_opened);
 }
