@@ -65,7 +65,7 @@ public:
 	template <typename Callable, typename... Child_args>
 	process(Callable&& childProccessFunction,
 		 	Child_args&&... functionParameters,
-			std::shared_ptr<MemoryDelegator<T>> memoryDelegator = std::make_shared<Pipe<T>>());
+			std::shared_ptr<DataT> memoryDelegator = std::make_shared<Pipe<DataT>>());
 
 	/**
 	 * @brief Function supplying the callable to child process.

@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 	DLOG("Preparing to run process with parameters 10, 3, 50, \'f\', \"cstr\", std::string(\"str\")");
 
 	p.run(testFunction, 10, 3, 50, 'f', "cstr", std::string("str"));
+	p.pid();
 
 	std::string msg = "Process running going to sleep in process";
 	msg += std::to_string(p.pid());
